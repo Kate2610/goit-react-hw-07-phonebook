@@ -1,6 +1,7 @@
-
-import React from 'react';
+import React, { useState } from 'react';
 import { nanoid } from 'nanoid';
+import { useDispatch, useSelector } from 'react-redux';
+import { addContact } from 'redux/contacts/contact-operation';
 import {
   InputForm,
   FormField,
@@ -8,37 +9,32 @@ import {
   FieldName,
   ButtonAddContact,
 } from './form.styled';
-import { useState } from 'react';
-import { useDispatch } from 'react-redux';
-import { addContact } from 'redux/contacts/contact-operation';
 
 export default function Form() {
-  const dispatch = useDispatch()
-  const onSubmit = contact => {
-    const action = addContact(contact);
-    dispatch(action);
-  };
+  const dispatch = useDispatch();
+  const contacts = useSelector(state => state.contacts.items);
+
   const [state, setState] = useState({
     name: '',
     number: '',
   });
 
-  const name = nanoid();
-
   const handleChange = e => {
     const { name, value } = e.currentTarget;
-    setState(prev => {
-      return {
-        ...prev,
-        [name]: value,
-      };
-    });
+    setState(prevState => ({ ...prevState, [name]: value }));
   };
 
   const handleSubmit = e => {
     e.preventDefault();
     const { name, number } = state;
-    onSubmit({ name, number });
+    const existingContact = contacts.find(
+      contact => contact.name.toLowerCase() === name.toLowerCase(),
+    );
+    if (existingContact) {
+      alert(`Contact with name '${name}' already exists!`);
+      return;
+    }
+    dispatch(addContact({ id: nanoid(), name, number }));
     reset();
   };
 
@@ -46,12 +42,15 @@ export default function Form() {
     setState({ name: '', number: '' });
   };
 
+  const nameInputId = nanoid();
+  const numberInputId = nanoid();
+
   return (
     <InputForm onSubmit={handleSubmit}>
       <FormField>
-        <FieldName htmlFor="name">Name</FieldName>
+        <FieldName htmlFor={nameInputId}>Name</FieldName>
         <FormFieldInput
-          id={name}
+          id={nameInputId}
           type="text"
           value={state.name}
           name="name"
@@ -59,12 +58,12 @@ export default function Form() {
           title="Name may contain only letters, apostrophe, dash and spaces. For example Adrian, Jacob Mercer, Charles de Batz de Castelmore d'Artagnan"
           required
           onChange={handleChange}
-        ></FormFieldInput>
+        />
       </FormField>
       <FormField>
-        <FieldName htmlFor="name">Number</FieldName>
+        <FieldName htmlFor={numberInputId}>Number</FieldName>
         <FormFieldInput
-          id={name}
+          id={numberInputId}
           type="tel"
           value={state.number}
           name="number"
@@ -72,12 +71,9 @@ export default function Form() {
           title="Phone number must be digits and can contain spaces, dashes, parentheses and can start with +"
           required
           onChange={handleChange}
-        ></FormFieldInput>
+        />
       </FormField>
-      <ButtonAddContact type="submit" className="InputFieldButton" onSubmit={onSubmit}>
-        Add contact
-      </ButtonAddContact>
+      <ButtonAddContact type="submit">Add contact</ButtonAddContact>
     </InputForm>
   );
 }
-
